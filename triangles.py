@@ -1,4 +1,9 @@
+#Take a triangle and select some coordinate inside that triangle and plot a single point. Then randomly pick one of the three 
+#corners of the triange and plot a new point exactly half way between the point and the corner. From this new point, repeat 
+#the process picking a corner at random and plotting a point exaclty half way between you and that new randomly selected corner. If this 
+#process is repeated many many times, it plots a nice unexpected pattern which is quite cool. Thats what this code does
 
+# shown in this numberphile video https://www.youtube.com/watch?v=kbKtFN71Lfs
 
 import matplotlib.pyplot as plt
 import random
