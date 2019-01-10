@@ -3,7 +3,7 @@ package worker
 import "sync"
 
 type WaitGroup struct {
-	read   sync.WaitGroup
-	write  sync.WaitGroup
-	worker sync.WaitGroup
+	Reader   sync.WaitGroup
+	Writer  sync.WaitGroup
+	Worker sync.WaitGroup
 }
