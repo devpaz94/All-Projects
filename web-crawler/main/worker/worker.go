@@ -1,35 +1,30 @@
 package worker
 
 import (
-	"sync"
-
-	"github.com/web-crawler/main/crawler"
+	"github.com/All-Projects/web-crawler/main/crawler"
 )
 
-func InitialiseWorkers(jobs <-chan string, numberOfThreads int, wg *sync.WaitGroup, m *sync.Mutex) {
+// InitialiseWorkers does a thing
+func InitialiseWorkers(jobs <-chan string, numberOfThreads int, urlMaps *URLMaps, wg *WaitGroup) {
 	for i := 0; i < numberOfThreads; i++ {
-		go worker(jobs, wg, m)
+		go func() {
+			for url := range jobs {
+				urls := crawler.GetLinks(url)
+				checkLists(urls, urlMaps, wg)
+			}
+		}()
 	}
 }
 
-func worker(jobs <-chan string, wg *sync.WaitGroup, m *sync.Mutex) {
-	for url := range jobs {
-		urls := crawler.GetLinks(url)
-		checkLists(urls, wg, m)
-	}
-}
-
-func checkLists(urls crawler.Page, wg *sync.WaitGroup, m *sync.Mutex) {
+func checkLists(urls crawler.Page, urlMaps *URLMaps, wg *WaitGroup) {
 	for _, url := range urls.URLList {
-		m.Lock()
-		_, inUnchecked := UncheckedURLs[url]
-		_, inChecked := CheckedURLs[url]
+		_, inUnchecked := urlMaps.unCheckedURLs[url]
+		_, inChecked := urlMaps.checkedURLs[url]
 		if inUnchecked || inChecked {
-			m.Unlock()
 			continue
 		}
-		UncheckedURLs[url] = struct{}{}
-		m.Unlock()
+		urlMaps.unCheckedURLs[url] = struct{}{}
+
 	}
-	wg.Done()
+	wg.worker.Done()
 }

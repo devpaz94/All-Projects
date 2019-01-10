@@ -2,24 +2,31 @@ package main
 
 import (
 	"fmt"
-	"sync"
 
-	w "github.com/web-crawler/main/worker"
+	w "github.com/All-Projects/web-crawler/main/worker"
 )
 
 func main() {
+
+	seed := "https://monzo.com/"
 	numberOfThreads := 100
+
+	wg := w.WaitGroup{}
+
+	urlMaps := w.URLMaps{UnCheckedURLs: map[string]struct{}{seed}}
+
 	jobs := make(chan string)
-	var wg sync.WaitGroup
-	var m sync.Mutex
 
-	w.InitialiseWorkers(jobs, numberOfThreads, &wg, &m)
+	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps, &wg)
 
-	for w.WorkersNotDone(&wg) {
+	for w.WorkersNotDone(wg, urlMaps) {
 		for url := range w.UncheckedURLs {
-			wg.Add(1)
-			delete(w.UncheckedURLs, url)
-			w.CheckedURLs[url] = []string{}
+			workerWait.Add(1)
+			_, inCurrentlyChecking := currentlyChecking[url]
+			if inCurrentlyChecking {
+				continue
+			}
+			currentlyChecking[url] = struct{}{}
 			jobs <- url
 		}
 	}
