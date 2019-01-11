@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	w "github.com/All-Projects/web-crawler/main/worker"
 )
 
@@ -12,8 +14,8 @@ func main() {
 	wg := w.WaitGroup{}
 
 	urlMaps := w.URLMaps{
-		UnCheckedURLs: map[string]struct{}{seed:{}},
-		CheckedURLs: map[string][]string{},
+		UnCheckedURLs: map[string]interface{}{seed: struct{}{}},
+		CheckedURLs:   map[string]interface{}{},
 	}
 
 	jobs := make(chan string)
@@ -21,14 +23,12 @@ func main() {
 	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps, &wg)
 
 	for w.WorkersNotDone(&wg, &urlMaps) {
-		uncheckedUrls := w.UnCheckedRead(&urlMaps.UnCheckedURLs, &wg)
+		uncheckedUrls := w.ReadMap(&urlMaps.UnCheckedURLs, &wg)
 		for url := range uncheckedUrls {
 			wg.Worker.Add(1)
-			wg.Writer.Add(1)
-			urlMaps.CheckedURLs[url] = []string{}
-			delete(urlMaps.UnCheckedURLs, url)
-			wg.Writer.Done()
+			w.DeleteAndWriteMaps(&urlMaps, &wg, url)
 			jobs <- url
 		}
 	}
+	fmt.Println(len(urlMaps.CheckedURLs))
 }

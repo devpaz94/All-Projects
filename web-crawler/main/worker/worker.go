@@ -18,13 +18,14 @@ func InitialiseWorkers(jobs <-chan string, numberOfThreads int, urlMaps *URLMaps
 
 func checkLists(urls crawler.Page, urlMaps *URLMaps, wg *WaitGroup) {
 	for _, url := range urls.URLList {
-		_, inUnchecked := urlMaps.UnCheckedURLs[url]
-		_, inChecked := urlMaps.UnCheckedURLs[url]
+		uncheckedUrls := ReadMap(&urlMaps.UnCheckedURLs, wg)
+		checkedUrls := ReadMap(&urlMaps.CheckedURLs, wg)
+		_, inUnchecked := uncheckedUrls[url]
+		_, inChecked := checkedUrls[url]
 		if inUnchecked || inChecked {
 			continue
 		}
-		urlMaps.UnCheckedURLs[url] = struct{}{}
-
+		WriteMap(&urlMaps.UnCheckedURLs, wg, url, struct{}{})
 	}
 	wg.Worker.Done()
 }

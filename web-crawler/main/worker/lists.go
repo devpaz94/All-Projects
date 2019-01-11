@@ -1,9 +1,9 @@
 package worker
 
 func WorkersNotDone(wg *WaitGroup, urlMaps *URLMaps) bool {
-	if len(urlMaps.UnCheckedURLs) == 0 {
+	if len(ReadMap(&urlMaps.UnCheckedURLs, wg)) == 0 {
 		wg.Worker.Wait()
-		if len(urlMaps.UnCheckedURLs) == 0 {
+		if len(ReadMap(&urlMaps.UnCheckedURLs, wg)) == 0 {
 			return false
 		}
 	}
