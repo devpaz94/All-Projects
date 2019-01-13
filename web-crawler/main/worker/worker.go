@@ -1,38 +1,33 @@
 package worker
 
 import (
+	"sync"
+
 	"github.com/All-Projects/web-crawler/main/crawler"
 )
 
 // InitialiseWorkers does a thing
-func InitialiseWorkers(jobs <-chan string, numberOfThreads int, urlMaps *URLMaps) {
+func InitialiseWorkers(jobs <-chan string, numberOfThreads int, urlMaps *URLMaps, wg *sync.WaitGroup) {
 	for i := 0; i < numberOfThreads; i++ {
-		go func() {
-			for url := range jobs {
-				urls := crawler.GetLinks(url)
-				checkLists(urls, urlMaps)
-			}
-		}()
+		go worker(jobs, urlMaps, wg)
 	}
 }
 
-func checkLists(urls crawler.Page, urlMaps *URLMaps) {
-	for _, url := range urls.URLList {
-		checkedUrls, uncheckedUrls := ReadMaps(urlMaps)
-		_, inUnchecked := uncheckedUrls[url]
-		_, inChecked := checkedUrls[url]
-		if inUnchecked || inChecked {
-			continue
+func worker(jobs <-chan string, urlMaps *URLMaps, wg *sync.WaitGroup) {
+	for url := range jobs {
+		urls := crawler.GetLinks(url)
+		for _, url := range urls.URLList {
+			CheckAndWriteMap(urlMaps, url)
 		}
-		WriteMap(urlMaps, url, struct{}{})
+		wg.Done()
 	}
-	Worker.Done()
 }
 
-func WorkersNotDone(urlMaps *URLMaps) bool {
+//WorkersNotDone sees whether there are any urls left to check
+func WorkersNotDone(urlMaps *URLMaps, wg *sync.WaitGroup) bool {
 	_, unchecked := ReadMaps(urlMaps)
 	if len(unchecked) == 0 {
-		Worker.Wait()
+		wg.Wait()
 		_, unchecked := ReadMaps(urlMaps)
 		if len(unchecked) == 0 {
 			return false

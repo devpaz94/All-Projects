@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	w "github.com/All-Projects/web-crawler/main/worker"
@@ -19,12 +20,14 @@ func main() {
 
 	jobs := make(chan string)
 
-	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps)
+	var wg sync.WaitGroup
 
-	for w.WorkersNotDone(&urlMaps) {
+	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps, &wg)
+
+	for w.WorkersNotDone(&urlMaps, &wg) {
 		_, uncheckedUrls := w.ReadMaps(&urlMaps)
 		for url := range uncheckedUrls {
-			w.Worker.Add(1)
+			wg.Add(1)
 			w.DeleteAndWriteMaps(&urlMaps, url)
 			jobs <- url
 		}
