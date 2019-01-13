@@ -2,16 +2,15 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	w "github.com/All-Projects/web-crawler/main/worker"
 )
 
 func main() {
-
+	start := time.Now()
 	seed := "https://monzo.com/"
 	numberOfThreads := 100
-
-	wg := w.WaitGroup{}
 
 	urlMaps := w.URLMaps{
 		UnCheckedURLs: map[string]interface{}{seed: struct{}{}},
@@ -20,15 +19,18 @@ func main() {
 
 	jobs := make(chan string)
 
-	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps, &wg)
+	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps)
 
-	for w.WorkersNotDone(&wg, &urlMaps) {
-		uncheckedUrls := w.ReadMap(&urlMaps.UnCheckedURLs, &wg)
+	for w.WorkersNotDone(&urlMaps) {
+		_, uncheckedUrls := w.ReadMaps(&urlMaps)
 		for url := range uncheckedUrls {
-			wg.Worker.Add(1)
-			w.DeleteAndWriteMaps(&urlMaps, &wg, url)
+			w.Worker.Add(1)
+			w.DeleteAndWriteMaps(&urlMaps, url)
 			jobs <- url
 		}
 	}
+
 	fmt.Println(len(urlMaps.CheckedURLs))
+	end := time.Now()
+	fmt.Println(end.Sub(start))
 }

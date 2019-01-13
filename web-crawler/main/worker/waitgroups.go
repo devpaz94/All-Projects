@@ -2,11 +2,11 @@ package worker
 
 import "sync"
 
-type WaitGroup struct {
-	Reader sync.WaitGroup
-	Writer sync.WaitGroup
-	Worker sync.WaitGroup
-}
+// type WaitGroup struct {
+// 	Reader sync.WaitGroup
+// 	Writer sync.WaitGroup
+// 	Worker sync.WaitGroup
+// }
 
 var Reader sync.WaitGroup
 var Writer sync.WaitGroup
