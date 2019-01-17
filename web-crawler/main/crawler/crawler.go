@@ -8,11 +8,11 @@ import (
 )
 
 // GetLinks takes a url string and returns a Page struct with the original url and a string of urls on the page
-func GetLinks(url string) Page {
+func GetLinks(url string) []string {
 	rsp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error making http request for ", url)
-		return Page{}
+		return []string{}
 	}
 	z := html.NewTokenizer(rsp.Body)
 	pageLinks := []string{}
@@ -20,7 +20,7 @@ func GetLinks(url string) Page {
 		tt := z.Next()
 		switch {
 		case tt == html.ErrorToken:
-			return Page{url, pageLinks}
+			return pageLinks
 		case tt == html.StartTagToken:
 			t := z.Token()
 			if t.Data != "a" {

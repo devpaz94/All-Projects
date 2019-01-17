@@ -14,22 +14,21 @@ func InitialiseWorkers(jobs <-chan string, numberOfThreads int, urlMaps *URLMaps
 }
 
 func worker(jobs <-chan string, urlMaps *URLMaps, wg *sync.WaitGroup) {
-	for url := range jobs {
-		urls := crawler.GetLinks(url)
-		for _, url := range urls.URLList {
-			CheckAndWriteMap(urlMaps, url)
+	for seed := range jobs {
+		urls := crawler.GetLinks(seed)
+		for _, url := range urls {
+			CheckAndWriteMaps(urlMaps, url)
 		}
+		WriteMap(seed, urls, urlMaps)
 		wg.Done()
 	}
 }
 
 //WorkersNotDone sees whether there are any urls left to check
 func WorkersNotDone(urlMaps *URLMaps, wg *sync.WaitGroup) bool {
-	_, unchecked := ReadMaps(urlMaps)
-	if len(unchecked) == 0 {
+	if len(ReadMap(urlMaps)) == 0 {
 		wg.Wait()
-		_, unchecked := ReadMaps(urlMaps)
-		if len(unchecked) == 0 {
+		if len(ReadMap(urlMaps)) == 0 {
 			return false
 		}
 	}

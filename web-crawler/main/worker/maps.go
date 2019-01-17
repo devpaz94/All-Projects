@@ -4,18 +4,19 @@ import "sync"
 
 //URLMaps strcut
 type URLMaps struct {
-	UnCheckedURLs map[string]interface{}
-	CheckedURLs   map[string]interface{}
+	UnCheckedURLs map[string]struct{}
+	CheckedURLs   map[string][]string
 	mtx           sync.RWMutex
 }
 
-//CheckAndWriteMap writes to the UnCheckedURLs map
-func CheckAndWriteMap(urlMaps *URLMaps, url string) {
+//CheckAndWriteMaps writes to the UnCheckedURLs map
+func CheckAndWriteMaps(urlMaps *URLMaps, url string) {
 	urlMaps.mtx.Lock()
 	_, inUnchecked := urlMaps.UnCheckedURLs[url]
 	_, inChecked := urlMaps.CheckedURLs[url]
 	if inUnchecked || inChecked {
 		urlMaps.mtx.Unlock()
+
 		return
 	}
 	urlMaps.UnCheckedURLs[url] = struct{}{}
@@ -26,16 +27,22 @@ func CheckAndWriteMap(urlMaps *URLMaps, url string) {
 func DeleteAndWriteMaps(urlMaps *URLMaps, k string) {
 	urlMaps.mtx.Lock()
 	delete(urlMaps.UnCheckedURLs, k)
-	urlMaps.CheckedURLs[k] = struct{}{}
+	urlMaps.CheckedURLs[k] = []string{}
 	urlMaps.mtx.Unlock()
 }
 
-//ReadMaps safely reads both maps
-func ReadMaps(urlMaps *URLMaps) (map[string]interface{}, map[string]interface{}) {
+//ReadMap safely reads from UnCheckedURLs
+func ReadMap(urlMaps *URLMaps) map[string]struct{} {
 	urlMaps.mtx.RLock()
-	checked := urlMaps.CheckedURLs
-	unchecked := urlMaps.UnCheckedURLs
+	unChecked := urlMaps.UnCheckedURLs
 	urlMaps.mtx.RUnlock()
 
-	return checked, unchecked
+	return unChecked
+}
+
+//WriteMap safely writes to CheckedURLs
+func WriteMap(seed string, urls []string, urlMaps *URLMaps) {
+	urlMaps.mtx.Lock()
+	urlMaps.CheckedURLs[seed] = urls
+	urlMaps.mtx.Unlock()
 }

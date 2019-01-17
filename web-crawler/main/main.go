@@ -9,31 +9,29 @@ import (
 )
 
 func main() {
-	start := time.Now()
 	seed := "https://monzo.com/"
 	numberOfThreads := 100
 
+	start := time.Now()
+
 	urlMaps := w.URLMaps{
-		UnCheckedURLs: map[string]interface{}{seed: struct{}{}},
-		CheckedURLs:   map[string]interface{}{},
+		UnCheckedURLs: map[string]struct{}{seed: struct{}{}},
+		CheckedURLs:   map[string][]string{},
 	}
 
 	jobs := make(chan string)
 
 	var wg sync.WaitGroup
-
 	w.InitialiseWorkers(jobs, numberOfThreads, &urlMaps, &wg)
 
 	for w.WorkersNotDone(&urlMaps, &wg) {
-		_, uncheckedUrls := w.ReadMaps(&urlMaps)
-		for url := range uncheckedUrls {
+		for url := range w.ReadMap(&urlMaps) {
 			wg.Add(1)
 			w.DeleteAndWriteMaps(&urlMaps, url)
 			jobs <- url
 		}
 	}
-
+	fmt.Println(urlMaps.CheckedURLs)
 	fmt.Println(len(urlMaps.CheckedURLs))
-	end := time.Now()
-	fmt.Println(end.Sub(start))
+	fmt.Println(time.Since(start))
 }
