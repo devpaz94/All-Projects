@@ -7,8 +7,8 @@ import (
 	"golang.org/x/net/html"
 )
 
-// GetLinks takes a url string and returns a Page struct with the original url and a string of urls on the page
-func GetLinks(url string) []string {
+// GetURLs takes a url string and returns a map with the original url and a []string of urls on the page
+func GetURLs(url string) []string {
 	rsp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error making http request for ", url)
@@ -35,6 +35,7 @@ func GetLinks(url string) []string {
 	}
 }
 
+// Find urls on page and filter out any links to external sites
 func getHref(t html.Token) (ok bool, href string) {
 	for _, a := range t.Attr {
 		if a.Key == "href" {
