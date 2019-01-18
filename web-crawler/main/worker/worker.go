@@ -3,33 +3,34 @@ package worker
 import (
 	"sync"
 
-	"github.com/web-crawler/main/crawler"
+	"github.com/All-Projects/web-crawler/main/crawler"
 )
 
-func InitialiseWorkers(jobs <-chan string, numberOfThreads int, wg *sync.WaitGroup, m *sync.Mutex) {
-	for i := 0; i < numberOfThreads; i++ {
-		go worker(jobs, wg, m)
+// InitialiseWorkers starts a number of workers (tc) in goroutines
+func InitialiseWorkers(jobs <-chan string, tc int, urlMaps *URLMaps, wg *sync.WaitGroup) {
+	for i := 0; i < tc; i++ {
+		go worker(jobs, urlMaps, wg)
 	}
 }
 
-func worker(jobs <-chan string, wg *sync.WaitGroup, m *sync.Mutex) {
-	for url := range jobs {
-		urls := crawler.GetLinks(url)
-		checkLists(urls, wg, m)
-	}
-}
-
-func checkLists(urls crawler.Page, wg *sync.WaitGroup, m *sync.Mutex) {
-	for _, url := range urls.URLList {
-		m.Lock()
-		_, inUnchecked := UncheckedURLs[url]
-		_, inChecked := CheckedURLs[url]
-		if inUnchecked || inChecked {
-			m.Unlock()
-			continue
+func worker(jobs <-chan string, urlMaps *URLMaps, wg *sync.WaitGroup) {
+	for seed := range jobs {
+		urls := crawler.GetURLs(seed)
+		for _, url := range urls {
+			CheckAndWriteMaps(urlMaps, url)
 		}
-		UncheckedURLs[url] = struct{}{}
-		m.Unlock()
+		WriteMap(seed, urls, urlMaps)
+		wg.Done()
 	}
-	wg.Done()
+}
+
+//WorkersNotDone waits for all workers to finish and checks whether there are any urls left to crawl
+func WorkersNotDone(urlMaps *URLMaps, wg *sync.WaitGroup) bool {
+	if len(ReadMap(urlMaps)) == 0 {
+		wg.Wait()
+		if len(ReadMap(urlMaps)) == 0 {
+			return false
+		}
+	}
+	return true
 }

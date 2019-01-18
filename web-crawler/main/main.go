@@ -3,26 +3,35 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 
-	w "github.com/web-crawler/main/worker"
+	w "github.com/All-Projects/web-crawler/main/worker"
 )
 
 func main() {
-	numberOfThreads := 100
+
+	start := time.Now()
+	seed := "https://monzo.com/"
+	threadCount := 100
+
+	urlMaps := w.URLMaps{
+		CheckedURLs:   map[string][]string{},
+		UnCheckedURLs: map[string]struct{}{seed: struct{}{}},
+	}
+
 	jobs := make(chan string)
 	var wg sync.WaitGroup
-	var m sync.Mutex
 
-	w.InitialiseWorkers(jobs, numberOfThreads, &wg, &m)
-
-	for w.WorkersNotDone(&wg) {
-		for url := range w.UncheckedURLs {
+	w.InitialiseWorkers(jobs, threadCount, &urlMaps, &wg)
+	for w.WorkersNotDone(&urlMaps, &wg) {
+		for url := range w.ReadMap(&urlMaps) {
 			wg.Add(1)
-			delete(w.UncheckedURLs, url)
-			w.CheckedURLs[url] = []string{}
+			w.DeleteAndWriteMaps(&urlMaps, url)
 			jobs <- url
 		}
 	}
-	fmt.Println(w.CheckedURLs)
-	fmt.Println(len(w.CheckedURLs))
+
+	fmt.Println(urlMaps.CheckedURLs)
+	fmt.Println(len(urlMaps.CheckedURLs))
+	fmt.Println(time.Since(start))
 }
